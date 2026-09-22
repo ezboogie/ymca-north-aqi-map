@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YMCA of the North - Live AQI Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 100vh; width: 100%; margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    var map = L.map('map').setView([45.5000, -93.2000], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    L.tileLayer('https://tiles.purpleair.com/tiles/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      opacity: 0.6,
+      attribution: '© PurpleAir'
+    }).addTo(map);
+
+    var locations = [
+      { name: "Andover YMCA", lat: 45.2447, lng: -93.3496, type: "Branch" },
+      { name: "Blaisdell YMCA", lat: 44.9422, lng: -93.2778, type: "Branch" },
+      { name: "Burnsville YMCA", lat: 44.7503, lng: -93.2808, type: "Branch" },
+      { name: "Dayton YMCA at Gaviidae", lat: 44.9780, lng: -93.2728, type: "Branch" },
+      { name: "Eagan YMCA", lat: 44.8252, lng: -93.1557, type: "Branch" },
+      { name: "Elk River YMCA", lat: 45.3308, lng: -93.5828, type: "Branch" },
+      { name: "Emma B. Howe YMCA", lat: 45.1278, lng: -93.2683, type: "Branch" },
+      { name: "Forest Lake YMCA", lat: 45.2789, lng: -92.9818, type: "Branch" },
+      { name: "Harold Mezile North Community YMCA", lat: 44.9997, lng: -93.3019, type: "Branch" },
+      { name: "Hastings YMCA", lat: 44.7388, lng: -92.8532, type: "Branch" },
+      { name: "Hudson YMCA", lat: 44.9691, lng: -92.7369, type: "Branch" },
+      { name: "Maplewood YMCA Community Center", lat: 45.0069, lng: -93.0252, type: "Branch" },
+      { name: "New Hope YMCA", lat: 45.0322, lng: -93.3789, type: "Branch" },
+      { name: "Ridgedale YMCA", lat: 44.9688, lng: -93.4357, type: "Branch" },
+      { name: "Shoreview YMCA", lat: 45.0601, lng: -93.1466, type: "Branch" },
+      { name: "Southdale YMCA", lat: 44.8697, lng: -93.3325, type: "Branch" },
+      { name: "St. Paul Eastside YMCA", lat: 44.9702, lng: -93.0602, type: "Branch" },
+      { name: "YMCA Camp du Nord", lat: 47.9712, lng: -91.8315, type: "Overnight Camp" },
+      { name: "YMCA Camp Icaghowan", lat: 45.3082, lng: -92.3683, type: "Overnight Camp" },
+      { name: "YMCA Camp Ihduhapi", lat: 45.0612, lng: -93.6335, type: "Overnight Camp" },
+      { name: "YMCA Camp Menogyn", lat: 48.0825, lng: -90.5369, type: "Overnight Camp" },
+      { name: "YMCA Camp Northern Lights", lat: 47.6892, lng: -91.9542, type: "Overnight Camp" },
+      { name: "YMCA Camp St. Croix", lat: 44.9482, lng: -92.7602, type: "Overnight Camp" },
+      { name: "YMCA Camp Warren", lat: 47.3822, lng: -92.5283, type: "Overnight Camp" },
+      { name: "YMCA Camp Widjiwagan", lat: 47.9745, lng: -91.8322, type: "Overnight Camp" },
+      { name: "YMCA Day Camp Christmas Tree", lat: 44.9288, lng: -93.6892, type: "Day Camp" },
+      { name: "YMCA Day Camp DayCroix", lat: 44.9525, lng: -92.7635, type: "Day Camp" },
+      { name: "YMCA Day Camp Gathering Pines", lat: 44.6032, lng: -93.2842, type: "Day Camp" },
+      { name: "YMCA Day Camp Heritage", lat: 45.1602, lng: -93.0852, type: "Day Camp" },
+      { name: "YMCA Day Camp Manitou", lat: 45.3288, lng: -93.7542, type: "Day Camp" },
+      { name: "YMCA Day Camp Spring Lake", lat: 44.7562, lng: -93.0562, type: "Day Camp" },
+      { name: "YMCA Day Camp Streefland", lat: 44.6192, lng: -93.2812, type: "Day Camp" }
+    ];
+
+    locations.forEach(function(loc) {
+      L.marker([loc.lat, loc.lng])
+        .addTo(map)
+        .bindPopup('<b>' + loc.name + '</b><br>Type: ' + loc.type);
+    });
+  </script>
+</body>
+</html>
