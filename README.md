@@ -9,13 +9,16 @@ The production site is deployed automatically to GitHub Pages from the `main` br
 ## Data and services
 
 - OpenStreetMap supplies the base map.
-- PurpleAir is referenced as the intended live AQI overlay.
-- YMCA coordinates are maintained directly in `index.html`.
+- PurpleAir supplies current outdoor PM2.5 readings through its authenticated API.
+- `scripts/fetch_aqi.py` applies the EPA PurpleAir correction, converts corrected PM2.5 to the current US EPA AQI scale, and matches every YMCA to the nearest recent sensor within 80 km.
+- YMCA coordinates are maintained in `locations.json`.
 
-## Important AQI note
+## Configure PurpleAir
 
-PurpleAir's supported data API requires an API key and uses a points-based access model. The current prototype retains the supplied tile-layer URL, but that URL is not documented as a supported public PurpleAir tile endpoint. The YMCA markers and OpenStreetMap layer work independently; the AQI overlay should be replaced with a supported, authenticated integration before it is relied on operationally.
+Add a GitHub Actions repository secret named `PURPLEAIR_API_KEY`. The key remains server-side and is never exposed to the public website. After adding the secret, manually run the **Deploy to GitHub Pages** workflow once; scheduled refreshes run hourly at 17 minutes past the hour.
+
+PurpleAir uses a points-based API access model. The workflow makes one regional sensor request per run.
 
 ## Deployment
 
-Pushes to `main` run the GitHub Pages workflow in `.github/workflows/deploy-pages.yml`.
+Pushes to `main`, manual runs, and the hourly schedule execute `.github/workflows/deploy-pages.yml`. If the secret is missing, the site still deploys its YMCA markers and displays a configuration warning instead of exposing or fabricating AQI values.
