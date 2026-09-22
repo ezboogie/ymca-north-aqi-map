@@ -1,72 +1,227 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YMCA of the North - Live AQI Map</title>
+  <meta name="description" content="Current PurpleAir AQI readings near YMCA of the North locations." />
+  <title>YMCA of the North — AQI Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    #map { height: 100vh; width: 100%; margin: 0; padding: 0; }
-    body { margin: 0; padding: 0; }
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #dbe5e8; color: #17212b; }
+    #map { z-index: 1; }
+    .map-header {
+      position: fixed;
+      z-index: 800;
+      top: 14px;
+      left: 56px;
+      width: min(410px, calc(100vw - 70px));
+      padding: 14px 16px;
+      border: 1px solid rgb(15 23 42 / 10%);
+      border-radius: 12px;
+      background: rgb(255 255 255 / 94%);
+      box-shadow: 0 8px 24px rgb(15 23 42 / 18%);
+      backdrop-filter: blur(8px);
+    }
+    .map-header h1 { margin: 0 0 4px; font-size: 18px; line-height: 1.25; font-weight: 700; }
+    .map-header p { margin: 0; font-size: 12px; line-height: 1.45; color: #52606d; }
+    .status-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; font-size: 12px; }
+    .status-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 999px; background: #64748b; }
+    .status-dot.live { background: #16a34a; box-shadow: 0 0 0 3px rgb(22 163 74 / 14%); }
+    .status-dot.warning { background: #d97706; box-shadow: 0 0 0 3px rgb(217 119 6 / 14%); }
+    .legend {
+      position: fixed;
+      z-index: 800;
+      right: 14px;
+      bottom: 28px;
+      width: 225px;
+      padding: 11px 12px;
+      border: 1px solid rgb(15 23 42 / 10%);
+      border-radius: 10px;
+      background: rgb(255 255 255 / 94%);
+      box-shadow: 0 6px 20px rgb(15 23 42 / 16%);
+      backdrop-filter: blur(8px);
+    }
+    .legend-title { margin-bottom: 7px; font-size: 12px; font-weight: 700; }
+    .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 9px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; color: #334155; }
+    .legend-swatch { width: 12px; height: 12px; flex: 0 0 auto; border: 1px solid rgb(15 23 42 / 20%); border-radius: 999px; }
+    .legend-note { margin-top: 8px; font-size: 10px; line-height: 1.35; color: #64748b; }
+    .aqi-marker { background: transparent; border: 0; }
+    .aqi-badge {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border: 3px solid #fff;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgb(15 23 42 / 38%);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .aqi-badge::after {
+      content: "";
+      position: absolute;
+      bottom: -5px;
+      width: 9px;
+      height: 9px;
+      transform: rotate(45deg);
+      border-right: 3px solid #fff;
+      border-bottom: 3px solid #fff;
+      background: inherit;
+    }
+    .popup-title { margin: 0 0 2px; font-size: 14px; font-weight: 700; }
+    .popup-type { margin-bottom: 9px; color: #64748b; font-size: 11px; }
+    .popup-aqi { display: flex; align-items: baseline; gap: 7px; margin-bottom: 7px; }
+    .popup-aqi strong { font-size: 28px; line-height: 1; }
+    .popup-aqi span { font-weight: 700; }
+    .popup-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 11px; }
+    .popup-grid dt { color: #64748b; }
+    .popup-grid dd { margin: 0; text-align: right; font-weight: 600; }
+    .popup-unavailable { padding-top: 4px; color: #7c2d12; font-size: 12px; line-height: 1.4; }
+    .leaflet-popup-content { margin: 14px 16px; min-width: 215px; }
+    .leaflet-popup-content-wrapper { border-radius: 10px; }
+    .leaflet-control-attribution { font-size: 10px; }
+    @media (max-width: 640px) {
+      .map-header { top: 10px; left: 50px; width: calc(100vw - 60px); padding: 11px 13px; }
+      .map-header h1 { font-size: 15px; }
+      .map-header p { display: none; }
+      .status-row { margin-top: 5px; }
+      .legend { right: 8px; bottom: 24px; width: 205px; padding: 9px 10px; }
+      .aqi-badge { width: 38px; height: 38px; }
+    }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <main id="map" aria-label="YMCA of the North air quality map"></main>
+  <section class="map-header" aria-live="polite">
+    <h1>YMCA of the North — AQI Map</h1>
+    <p>Each marker uses the nearest recent outdoor PurpleAir sensor.</p>
+    <div class="status-row">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text">Loading air-quality data…</span>
+    </div>
+  </section>
+  <aside class="legend" aria-label="AQI legend">
+    <div class="legend-title">US EPA PM2.5 AQI</div>
+    <div class="legend-grid">
+      <div class="legend-item"><span class="legend-swatch" style="background:#00e400"></span>Good · 0–50</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffff00"></span>Moderate · 51–100</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ff7e00"></span>USG · 101–150</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ff0000"></span>Unhealthy · 151–200</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#8f3f97"></span>Very unhealthy</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#7e0023"></span>Hazardous</div>
+    </div>
+    <div class="legend-note">10-minute PM2.5 · EPA-corrected PurpleAir readings · refreshed hourly</div>
+  </aside>
+
   <script>
-    var map = L.map('map').setView([45.5000, -93.2000], 7);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const map = L.map("map", { zoomControl: true }).setView([45.5, -93.2], 7);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    L.tileLayer('https://tiles.purpleair.com/tiles/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      opacity: 0.6,
-      attribution: '© PurpleAir'
-    }).addTo(map);
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
 
-    var locations = [
-      { name: "Andover YMCA", lat: 45.2447, lng: -93.3496, type: "Branch" },
-      { name: "Blaisdell YMCA", lat: 44.9422, lng: -93.2778, type: "Branch" },
-      { name: "Burnsville YMCA", lat: 44.7503, lng: -93.2808, type: "Branch" },
-      { name: "Dayton YMCA at Gaviidae", lat: 44.9780, lng: -93.2728, type: "Branch" },
-      { name: "Eagan YMCA", lat: 44.8252, lng: -93.1557, type: "Branch" },
-      { name: "Elk River YMCA", lat: 45.3308, lng: -93.5828, type: "Branch" },
-      { name: "Emma B. Howe YMCA", lat: 45.1278, lng: -93.2683, type: "Branch" },
-      { name: "Forest Lake YMCA", lat: 45.2789, lng: -92.9818, type: "Branch" },
-      { name: "Harold Mezile North Community YMCA", lat: 44.9997, lng: -93.3019, type: "Branch" },
-      { name: "Hastings YMCA", lat: 44.7388, lng: -92.8532, type: "Branch" },
-      { name: "Hudson YMCA", lat: 44.9691, lng: -92.7369, type: "Branch" },
-      { name: "Maplewood YMCA Community Center", lat: 45.0069, lng: -93.0252, type: "Branch" },
-      { name: "New Hope YMCA", lat: 45.0322, lng: -93.3789, type: "Branch" },
-      { name: "Ridgedale YMCA", lat: 44.9688, lng: -93.4357, type: "Branch" },
-      { name: "Shoreview YMCA", lat: 45.0601, lng: -93.1466, type: "Branch" },
-      { name: "Southdale YMCA", lat: 44.8697, lng: -93.3325, type: "Branch" },
-      { name: "St. Paul Eastside YMCA", lat: 44.9702, lng: -93.0602, type: "Branch" },
-      { name: "YMCA Camp du Nord", lat: 47.9712, lng: -91.8315, type: "Overnight Camp" },
-      { name: "YMCA Camp Icaghowan", lat: 45.3082, lng: -92.3683, type: "Overnight Camp" },
-      { name: "YMCA Camp Ihduhapi", lat: 45.0612, lng: -93.6335, type: "Overnight Camp" },
-      { name: "YMCA Camp Menogyn", lat: 48.0825, lng: -90.5369, type: "Overnight Camp" },
-      { name: "YMCA Camp Northern Lights", lat: 47.6892, lng: -91.9542, type: "Overnight Camp" },
-      { name: "YMCA Camp St. Croix", lat: 44.9482, lng: -92.7602, type: "Overnight Camp" },
-      { name: "YMCA Camp Warren", lat: 47.3822, lng: -92.5283, type: "Overnight Camp" },
-      { name: "YMCA Camp Widjiwagan", lat: 47.9745, lng: -91.8322, type: "Overnight Camp" },
-      { name: "YMCA Day Camp Christmas Tree", lat: 44.9288, lng: -93.6892, type: "Day Camp" },
-      { name: "YMCA Day Camp DayCroix", lat: 44.9525, lng: -92.7635, type: "Day Camp" },
-      { name: "YMCA Day Camp Gathering Pines", lat: 44.6032, lng: -93.2842, type: "Day Camp" },
-      { name: "YMCA Day Camp Heritage", lat: 45.1602, lng: -93.0852, type: "Day Camp" },
-      { name: "YMCA Day Camp Manitou", lat: 45.3288, lng: -93.7542, type: "Day Camp" },
-      { name: "YMCA Day Camp Spring Lake", lat: 44.7562, lng: -93.0562, type: "Day Camp" },
-      { name: "YMCA Day Camp Streefland", lat: 44.6192, lng: -93.2812, type: "Day Camp" }
-    ];
+    function aqiStyle(aqi) {
+      if (!Number.isFinite(aqi)) return { color: "#64748b", text: "#ffffff", label: "Unavailable" };
+      if (aqi <= 50) return { color: "#00e400", text: "#102a10", label: "Good" };
+      if (aqi <= 100) return { color: "#ffff00", text: "#332b00", label: "Moderate" };
+      if (aqi <= 150) return { color: "#ff7e00", text: "#251200", label: "Unhealthy for Sensitive Groups" };
+      if (aqi <= 200) return { color: "#ff0000", text: "#ffffff", label: "Unhealthy" };
+      if (aqi <= 300) return { color: "#8f3f97", text: "#ffffff", label: "Very Unhealthy" };
+      return { color: "#7e0023", text: "#ffffff", label: "Hazardous" };
+    }
 
-    locations.forEach(function(loc) {
-      L.marker([loc.lat, loc.lng])
-        .addTo(map)
-        .bindPopup('<b>' + loc.name + '</b><br>Type: ' + loc.type);
-    });
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function popupHtml(location, reading) {
+      const heading = `<div class="popup-title">${escapeHtml(location.name)}</div><div class="popup-type">${escapeHtml(location.type)}</div>`;
+      if (!reading || reading.status !== "ok") {
+        return `${heading}<div class="popup-unavailable">No recent PurpleAir sensor reading is available near this location.</div>`;
+      }
+      const sensorTime = reading.sensor_last_seen
+        ? new Date(reading.sensor_last_seen).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+        : "Unknown";
+      return `${heading}
+        <div class="popup-aqi"><strong>${reading.aqi}</strong><span>${escapeHtml(reading.category)}</span></div>
+        <dl class="popup-grid">
+          <dt>Corrected PM2.5</dt><dd>${reading.pm25_corrected} µg/m³</dd>
+          <dt>Nearest sensor</dt><dd>${escapeHtml(reading.sensor_name)}</dd>
+          <dt>Distance</dt><dd>${reading.sensor_distance_km} km</dd>
+          <dt>Sensor time</dt><dd>${escapeHtml(sensorTime)}</dd>
+        </dl>`;
+    }
+
+    function markerIcon(reading) {
+      const aqi = reading?.status === "ok" ? Number(reading.aqi) : NaN;
+      const style = aqiStyle(aqi);
+      const value = Number.isFinite(aqi) ? aqi : "—";
+      return L.divIcon({
+        className: "aqi-marker",
+        html: `<div class="aqi-badge" style="background:${style.color};color:${style.text}" aria-label="AQI ${value}">${value}</div>`,
+        iconSize: [42, 47],
+        iconAnchor: [21, 44],
+        popupAnchor: [0, -43]
+      });
+    }
+
+    async function initialize() {
+      try {
+        const [locationsResponse, aqiResponse] = await Promise.all([
+          fetch("locations.json", { cache: "no-store" }),
+          fetch(`aqi-data.json?ts=${Date.now()}`, { cache: "no-store" })
+        ]);
+        if (!locationsResponse.ok || !aqiResponse.ok) throw new Error("Map data could not be loaded.");
+        const locations = await locationsResponse.json();
+        const aqiData = await aqiResponse.json();
+        const readings = new Map((aqiData.locations || []).map(item => [item.id, item]));
+        const bounds = [];
+
+        locations.forEach(location => {
+          const reading = readings.get(location.id);
+          const marker = L.marker([location.lat, location.lng], {
+            icon: markerIcon(reading),
+            title: `${location.name}${reading?.status === "ok" ? ` — AQI ${reading.aqi}` : " — AQI unavailable"}`
+          }).addTo(map);
+          marker.bindPopup(popupHtml(location, reading));
+          bounds.push([location.lat, location.lng]);
+        });
+        if (bounds.length) map.fitBounds(bounds, { padding: [35, 35] });
+
+        if (aqiData.status === "ok") {
+          const updated = new Date(aqiData.generated_at);
+          const ageMinutes = Math.round((Date.now() - updated.getTime()) / 60000);
+          statusDot.className = `status-dot ${ageMinutes > 90 ? "warning" : "live"}`;
+          statusText.textContent = `Updated ${updated.toLocaleString([], { dateStyle: "short", timeStyle: "short" })}${ageMinutes > 90 ? " · data may be stale" : ""}`;
+        } else {
+          statusDot.className = "status-dot warning";
+          statusText.textContent = aqiData.message || "AQI data is not configured yet.";
+        }
+      } catch (error) {
+        statusDot.className = "status-dot warning";
+        statusText.textContent = "AQI data is temporarily unavailable.";
+        console.error(error);
+      }
+    }
+
+    initialize();
   </script>
 </body>
 </html>
