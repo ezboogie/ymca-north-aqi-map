@@ -1,0 +1,7 @@
+{
+  "status": "configuration_required",
+  "generated_at": null,
+  "source": "PurpleAir",
+  "message": "Add the PURPLEAIR_API_KEY repository secret, then run the deployment workflow.",
+  "locations": []
+}
